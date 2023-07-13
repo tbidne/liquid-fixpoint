@@ -2,6 +2,7 @@
 {-# LANGUAGE RecordWildCards    #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE NamedFieldPuns     #-}
 {-# LANGUAGE OverloadedStrings  #-}
 module Language.Fixpoint.Solver.Stats where
 
@@ -12,7 +13,11 @@ import           GHC.Generics
 import           Text.PrettyPrint.HughesPJ (text)
 import qualified Data.Store              as S
 import qualified Language.Fixpoint.Types.PrettyPrint as F
-import Data.Aeson
+import           Language.Fixpoint.Utils.JSON ((.=), (.:))
+import qualified Language.Fixpoint.Utils.JSON as LiquidJSON
+import           Text.JSON ( JSON (readJSON, showJSON))
+import qualified Text.JSON as JSON
+import Data.Aeson hiding ((.=), (.:))
 
 data Stats = Stats
   { numCstr      :: !Int -- ^ # Horn Constraints
@@ -42,6 +47,24 @@ instance Semigroup Stats where
           , numChck      = numChck s1      + numChck s2
           , numVald      = numVald s1      + numVald s2
           }
+
+instance JSON Stats where
+  showJSON Stats{numCstr,numIter,numBrkt,numChck,numVald} =
+    JSON.makeObj
+      [ "numCstr" .= numCstr,
+        "numIter" .= numIter,
+        "numBrkt" .= numBrkt,
+        "numChck" .= numChck,
+        "numVald" .= numVald
+      ]
+
+  readJSON = LiquidJSON.readJSONObj $ \v ->
+    Stats
+      <$> v .: "numCstr"
+      <*> v .: "numIter"
+      <*> v .: "numBrkt"
+      <*> v .: "numChck"
+      <*> v .: "numVald"
 
 instance ToJSON Stats where
   toJSON = genericToJSON defaultOptions
