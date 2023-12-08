@@ -2,7 +2,11 @@ name: cabal
 
 on:
   push:
+    branches:
+      - ci
   pull_request:
+
+  workflow_dispatch:
 
 # NOTE: The setup-z3 action constructs the download filename from
 # z3-version-architecture-distribution. From z3-4.8.10 to z3-4.8.11, the z3
@@ -41,15 +45,6 @@ jobs:
         with:
           ghc-version: ${{ matrix.ghc }}
           cabal-version: ${{ matrix.cabal }}
-
-      - name: Cache ~/.cabal/packages, ~/.cabal/store and dist-newstyle
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cabal/packages
-            ~/.cabal/store
-            dist-newstyle
-          key: ${{ runner.os }}-${{ matrix.ghc }}-cabal-${{ hashFiles('**/*.cabal', '**/cabal.project', '**/cabal.project.freeze') }}
 
       - name: Update package list
         run: cabal update
