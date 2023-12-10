@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TupleSections #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
@@ -20,6 +21,7 @@ import GHC.Generics
 
 import Language.Fixpoint.Types.Refinements as R
 import Language.Fixpoint.Parse             (isNotReserved)
+import Language.Fixpoint.Solver.Stats      (Stats (..))
 import Language.Fixpoint.Types             as T hiding (Result)
 import Language.Fixpoint.Types.Spans       as Spans
 import Data.Traversable                    (for)
@@ -381,3 +383,24 @@ chainedAnfGen symGen n = do
 -- easily.
 anfSymNGen :: Int -> Gen AnfSymbol
 anfSymNGen i = pure . AnfSymbol . mappendSym anfPrefix . symbol . show $ i
+
+instance Arbitrary Stats where
+  arbitrary =
+    Stats
+      <$> arbitrary
+      <*> arbitrary
+      <*> arbitrary
+      <*> arbitrary
+      <*> arbitrary
+
+  shrink = genericShrink
+
+instance Arbitrary (FixResult Integer) where
+  arbitrary =
+    oneof
+      [ Crash <$> arbitrary <*> arbitrary,
+        Unsafe <$> arbitrary <*> arbitrary,
+        Safe <$> arbitrary
+      ]
+
+  shrink = genericShrink

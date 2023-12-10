@@ -2,6 +2,7 @@
 
 module Main where
 
+import qualified JSONTests
 import qualified ParserTests
 import qualified ShareMapTests
 import qualified SimplifyTests
@@ -11,7 +12,8 @@ import Test.Tasty
 
 main :: IO ()
 main = defaultMain $ testGroup "Tests"
-  [ ParserTests.tests
+  [ JSONTests.tests
+  , ParserTests.tests
   , ShareMapTests.tests
   , SimplifyTests.tests
   , InterpretTests.tests
