@@ -91,7 +91,6 @@ module Language.Fixpoint.Types.Constraints (
 
 import qualified Data.Store as S
 import           Data.Generics             (Data)
-import           Data.Aeson                hiding (Result)
 import qualified Data.Set                  as Set
 import           Data.Typeable             (Typeable)
 import           Data.Hashable
@@ -281,11 +280,6 @@ data Result a = Result
   , gresSolution :: !GFixSolution
   }
   deriving (Generic, Show, Functor)
-
-
-
-instance ToJSON a => ToJSON (Result a) where
-  toJSON = toJSON . resStatus
 
 instance JSON a => JSON (Result a) where
   showJSON = showJSON . resStatus

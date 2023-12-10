@@ -4,7 +4,6 @@
 module JSONTests (tests) where
 
 import           Arbitrary ()
-import qualified Data.Aeson as Aeson
 import           Data.String (IsString)
 import qualified Data.ByteString as BS
 import           Language.Fixpoint.Solver.Stats (Stats(..))
@@ -36,7 +35,6 @@ specs =
 
 testSafeEncode :: TestTree
 testSafeEncode = testCase "Tests Safe encode" $ do
-  expected @=? Aeson.encode fixResult
   expected @=? LiquidJSON.encode fixResult
   testDecode "safe.json" fixResult
   where
@@ -59,7 +57,6 @@ testSafeEncode = testCase "Tests Safe encode" $ do
 
 testUnsafeEncode :: TestTree
 testUnsafeEncode = testCase "Tests Unsafe encode" $ do
-  expected @=? Aeson.encode fixResult
   expected @=? LiquidJSON.encode fixResult
   testDecode "unsafe.json" fixResult
   where
@@ -83,7 +80,6 @@ testUnsafeEncode = testCase "Tests Unsafe encode" $ do
 
 testCrashEncode :: TestTree
 testCrashEncode = testCase "Tests Crash encode" $ do
-  expected @=? Aeson.encode fixResult
   expected @=? LiquidJSON.encode fixResult
   testDecode "crash.json" fixResult
   where
