@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TupleSections #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
@@ -18,8 +19,11 @@ import qualified Data.HashMap.Strict       as M
 import Test.Tasty.QuickCheck
 import GHC.Generics
 
+import qualified Language.Fixpoint.Horn.Types as HornTypes
+import Language.Fixpoint.Types.Constraints (Result (Result))
 import Language.Fixpoint.Types.Refinements as R
 import Language.Fixpoint.Parse             (isNotReserved)
+import Language.Fixpoint.Solver.Stats      (Stats (Stats))
 import Language.Fixpoint.Types             as T hiding (Result)
 import Language.Fixpoint.Types.Spans       as Spans
 import Data.Traversable                    (for)
@@ -381,3 +385,52 @@ chainedAnfGen symGen n = do
 -- easily.
 anfSymNGen :: Int -> Gen AnfSymbol
 anfSymNGen i = pure . AnfSymbol . mappendSym anfPrefix . symbol . show $ i
+
+instance Arbitrary Stats where
+  arbitrary =
+    Stats
+      <$> arbitrary
+      <*> arbitrary
+      <*> arbitrary
+      <*> arbitrary
+      <*> arbitrary
+
+  shrink = genericShrink
+
+instance Arbitrary a => Arbitrary (FixResult a) where
+  arbitrary =
+    oneof
+      [ Crash <$> arbitrary <*> arbitrary,
+        Unsafe <$> arbitrary <*> arbitrary,
+        Safe <$> arbitrary
+      ]
+
+  shrink = genericShrink
+
+instance Arbitrary HornTypes.Tag where
+  arbitrary =
+    oneof
+      [ pure HornTypes.NoTag,
+        HornTypes.Tag <$> arbitrary
+      ]
+
+  shrink = genericShrink
+
+instance Arbitrary a => Arbitrary (Result (Integer, a)) where
+  arbitrary =
+    Result
+      <$> arbitrary
+      <*> genFixSolution
+      <*> genFixSolution
+      <*> genGFixSol
+    where
+      genFixSolution :: Gen FixSolution
+      genFixSolution = M.fromList <$> listOf genKVarExpr
+
+      -- arbitraryAtomicExpr over arbitrary as the former is likely to cause
+      -- failures due to too many discards
+      genKVarExpr :: Gen (KVar, Expr)
+      genKVarExpr = (,) <$> (KV <$> arbitrary) <*> arbitraryAtomicExpr
+
+      genGFixSol :: Gen GFixSolution
+      genGFixSol = toGFixSol . M.fromList <$> listOf arbitrary

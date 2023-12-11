@@ -31,6 +31,7 @@ extra-source-files: tests/neg/*.fq
                     unix/Language/Fixpoint/Utils/*.hs
                     win/Language/Fixpoint/Utils/*.hs
                     tests/logs/cur/pin
+                    tests/tasty/json/*.json
                     Makefile
 extra-doc-files:    CHANGES.md
                     README.md
@@ -229,6 +230,7 @@ test-suite tasty
   main-is:          Main.hs
   other-modules:    Arbitrary
                     InterpretTests
+                    JSONTests
                     ParserTests
                     ShareMapReference
                     ShareMapTests
@@ -241,10 +243,14 @@ test-suite tasty
   hs-source-dirs:   tests/tasty
   ghc-options:      -threaded
   build-depends:    base            >= 4.9.1.0 && < 5
+                  , bytestring
+                  , aeson
                   , containers
+                  , filepath
                   , hashable
                   , liquid-fixpoint
                   , tasty           >= 0.10
+                  , tasty-golden    ^>=2.3.5
                   , tasty-hunit     >= 0.9
                   , tasty-quickcheck
                   , text
