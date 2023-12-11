@@ -4,10 +4,7 @@
 module JSONTests (tests) where
 
 import Arbitrary ()
-import Data.Aeson (ToJSON)
-import qualified Data.Aeson as Aeson
 import qualified Data.ByteString as BS
-import qualified Data.ByteString.Lazy as BSL
 import Language.Fixpoint.Solver.Stats
   ( Stats
       ( Stats,
@@ -27,10 +24,7 @@ import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.Golden (goldenVsFile)
 import Test.Tasty.HUnit (testCase, (@=?))
 import Test.Tasty.QuickCheck
-  ( Property,
-    Testable (property),
-    conjoin,
-    counterexample,
+  ( Testable (property),
     testProperty,
     (===)
   )
@@ -48,28 +42,16 @@ specs :: TestTree
 specs =
   testGroup
     "Specs"
-    [ testSafeEncodeAeson,
-      testSafeEncode,
+    [ testSafeEncode,
       testSafeDecode,
-      testUnsafeEncodeAeson,
       testUnsafeEncode,
       testUnsafeDecode,
-      testCrashEncodeAeson,
       testCrashEncode,
       testCrashDecode
     ]
 
-testSafeEncodeAeson :: TestTree
-testSafeEncodeAeson = goldenVsFile "Aeson Safe encode" gpath apath $ do
-  let encoded = Aeson.encode fixResult
-  BS.writeFile apath (BSL.toStrict encoded)
-  where
-    (gpath, apath) = getGoldenPaths "safe"
-    fixResult :: FixResult Integer
-    fixResult = Safe stats
-
 testSafeEncode :: TestTree
-testSafeEncode = goldenVsFile "JSON Safe encode" gpath apath $ do
+testSafeEncode = goldenVsFile "Safe encode" gpath apath $ do
   let encoded = LiquidJSON.encode fixResult
   BS.writeFile apath encoded
   where
@@ -84,17 +66,8 @@ testSafeDecode = testCase "Safe decode" $ do
     fixResult :: FixResult Integer
     fixResult = Safe stats
 
-testUnsafeEncodeAeson :: TestTree
-testUnsafeEncodeAeson = goldenVsFile "Aeson Unsafe encode" gpath apath $ do
-  let encoded = Aeson.encode fixResult
-  BS.writeFile apath (BSL.toStrict encoded)
-  where
-    (gpath, apath) = getGoldenPaths "unsafe"
-    fixResult :: FixResult Integer
-    fixResult = Unsafe stats [1, 2, 3]
-
 testUnsafeEncode :: TestTree
-testUnsafeEncode = goldenVsFile "JSON Unsafe encode" gpath apath $ do
+testUnsafeEncode = goldenVsFile "Unsafe encode" gpath apath $ do
   let encoded = LiquidJSON.encode fixResult
   BS.writeFile apath encoded
   where
@@ -109,17 +82,8 @@ testUnsafeDecode = testCase "Unsafe decode" $ do
     fixResult :: FixResult Integer
     fixResult = Unsafe stats [1, 2, 3]
 
-testCrashEncodeAeson :: TestTree
-testCrashEncodeAeson = goldenVsFile "Tests Crash encode" gpath apath $ do
-  let encoded = Aeson.encode fixResult
-  BS.writeFile apath (BSL.toStrict encoded)
-  where
-    (gpath, apath) = getGoldenPaths "crash"
-    fixResult :: FixResult Integer
-    fixResult = Crash [(1, Just "\n"), (5, Nothing), (9, Just "ccc")] "str"
-
 testCrashEncode :: TestTree
-testCrashEncode = goldenVsFile "JSON Crash encode" gpath apath $ do
+testCrashEncode = goldenVsFile "Crash encode" gpath apath $ do
   let encoded = LiquidJSON.encode fixResult
   BS.writeFile apath encoded
   where
@@ -163,34 +127,19 @@ properties =
 testFixResultRoundtrip :: TestTree
 testFixResultRoundtrip = testProperty "decode . encode FixResult round trips" $
   property $ \(fixResult :: FixResult Integer) ->
-    conjoin
-      [ aesonJsonQuickCheck fixResult,
-        Ok fixResult === LiquidJSON.decode (LiquidJSON.encode fixResult)
-      ]
+    Ok fixResult === LiquidJSON.decode (LiquidJSON.encode fixResult)
 
 testDecodePreservesHornStatus :: TestTree
 testDecodePreservesHornStatus = testProperty "decode . encode Result preserves Horn status" $
   property $ \(result :: Constraints.Result (Integer, Constraints.Tag)) ->
     let zeroedResult = mempty {resStatus = resStatus result}
-     in conjoin
-          [ aesonJsonQuickCheck result,
-            Ok zeroedResult === LiquidJSON.decode (LiquidJSON.encode result)
-          ]
+     in Ok zeroedResult === LiquidJSON.decode (LiquidJSON.encode result)
 
 testDecodePreservesFQStatus :: TestTree
 testDecodePreservesFQStatus = testProperty "decode . encode Result preserves FQ status" $
   property $ \(result :: Constraints.Result (Integer, ())) ->
     let zeroedResult = mempty {resStatus = resStatus result}
-     in conjoin
-          [ aesonJsonQuickCheck result,
-            Ok zeroedResult === LiquidJSON.decode (LiquidJSON.encode result)
-          ]
-
-aesonJsonQuickCheck :: (JSON a, ToJSON a) => a -> Property
-aesonJsonQuickCheck = conjoin . LiquidJSON.aesonJsonEq (===) qcPass qcFail
-  where
-    qcPass = counterexample "" True
-    qcFail m = counterexample m False
+     in Ok zeroedResult === LiquidJSON.decode (LiquidJSON.encode result)
 
 getGoldenPaths :: FilePath -> (FilePath, FilePath)
 getGoldenPaths fileName = (golden, actual)

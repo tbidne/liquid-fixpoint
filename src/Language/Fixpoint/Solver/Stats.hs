@@ -15,9 +15,8 @@ import qualified Data.Store              as S
 import qualified Language.Fixpoint.Types.PrettyPrint as F
 import           Language.Fixpoint.Utils.JSON ((.=), (.:))
 import qualified Language.Fixpoint.Utils.JSON as LiquidJSON
-import           Text.JSON ( JSON (readJSON, showJSON))
+import           Text.JSON (JSON (readJSON, showJSON))
 import qualified Text.JSON as JSON
-import Data.Aeson hiding ((.=), (.:))
 
 data Stats = Stats
   { numCstr      :: !Int -- ^ # Horn Constraints
@@ -65,12 +64,6 @@ instance JSON Stats where
       <*> v .: "numBrkt"
       <*> v .: "numChck"
       <*> v .: "numVald"
-
-instance ToJSON Stats where
-  toJSON = genericToJSON defaultOptions
-  toEncoding = genericToEncoding defaultOptions
-
-instance FromJSON Stats
 
 instance Monoid Stats where
   mempty  = Stats 0 0 0 0 0

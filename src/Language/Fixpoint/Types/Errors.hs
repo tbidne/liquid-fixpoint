@@ -55,7 +55,6 @@ module Language.Fixpoint.Types.Errors (
 import           System.Exit                        (ExitCode (..))
 import           Control.Exception
 import           Data.Serialize                (Serialize (..))
-import           Data.Aeson                    hiding (Error, Result, (.=), (.:))
 import           Data.Generics                 (Data)
 import           Data.Typeable
 import           Control.DeepSeq
@@ -207,10 +206,6 @@ instance Monoid (FixResult a) where
 --   fmap f (Crash xs msg)   = Crash (f <$> xs) msg
 --   fmap f (Unsafe s xs)    = Unsafe s (f <$> xs)
 --   fmap _ (Safe stats)     = Safe stats
-
-instance (ToJSON a) => ToJSON (FixResult a) where
-  toJSON = genericToJSON defaultOptions
-  toEncoding = genericToEncoding defaultOptions
 
 instance JSON a => JSON (FixResult a) where
   showJSON (Crash xs str) =
