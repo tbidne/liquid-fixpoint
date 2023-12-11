@@ -120,6 +120,7 @@ library
                     Language.Fixpoint.Types.Visitor
                     Language.Fixpoint.Utils.Builder
                     Language.Fixpoint.Utils.Files
+                    Language.Fixpoint.Utils.JSON
                     Language.Fixpoint.Utils.Progress
                     Language.Fixpoint.Utils.Statistics
                     Language.Fixpoint.Utils.Trie
@@ -146,6 +147,7 @@ library
                   , filepath
                   , hashable
                   , intern
+                  , json >=0.10 && <0.12
                   , lens-family
                   , megaparsec           >= 7.0.0 && < 10
                   , mtl
@@ -245,9 +247,11 @@ test-suite tasty
   build-depends:    base            >= 4.9.1.0 && < 5
                   , bytestring
                   , aeson
+                  , bytestring
                   , containers
                   , filepath
                   , hashable
+                  , json
                   , liquid-fixpoint
                   , tasty           >= 0.10
                   , tasty-golden    ^>=2.3.5

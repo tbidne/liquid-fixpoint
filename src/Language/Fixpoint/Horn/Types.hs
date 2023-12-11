@@ -47,6 +47,8 @@ import qualified Language.Fixpoint.Types as F
 import qualified Text.PrettyPrint.HughesPJ.Compat as P
 import qualified Data.HashMap.Strict as M
 import           Data.Aeson
+import           Text.JSON (JSON (readJSON, showJSON), JSValue (JSNull, JSString))
+import qualified Text.JSON as JSON
 
 -------------------------------------------------------------------------------
 -- | @HVar@ is a Horn variable
@@ -229,6 +231,14 @@ instance F.PPrint Tag where
 instance ToJSON Tag where
   toJSON NoTag   = Null
   toJSON (Tag s) = String (T.pack s)
+
+instance JSON Tag where
+  showJSON NoTag = JSNull
+  showJSON (Tag s) = JSString $ JSON.toJSString s
+
+  readJSON JSNull = JSON.Ok NoTag
+  readJSON (JSString s) = JSON.Ok $ Tag $ JSON.fromJSString s
+  readJSON other = JSON.Error $ "readJSON Tag: Wanted null or string, received: " ++ show other
 
 instance F.PPrint (Query a) where
   pprintPrec k t q = P.vcat $ L.intersperse " "

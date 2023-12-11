@@ -114,6 +114,7 @@ import qualified Language.Fixpoint.Utils.Files as Files
 import qualified Language.Fixpoint.Solver.Stats as Solver
 
 import           Language.Fixpoint.Misc
+import           Text.JSON (JSON (readJSON, showJSON))
 import           Text.PrettyPrint.HughesPJ.Compat
 import qualified Data.HashMap.Strict       as M
 import qualified Data.HashSet              as S
@@ -267,7 +268,7 @@ type GFixSolution = GFixSol Expr
 type FixSolution  = M.HashMap KVar Expr
 
 newtype GFixSol e = GSol (M.HashMap KVar (e, [e]))
-  deriving (Generic, Semigroup, Monoid, Functor)
+  deriving (Eq, Generic, Semigroup, Monoid, Functor)
 
 toGFixSol :: M.HashMap KVar (e, [e]) -> GFixSol e
 toGFixSol = GSol
@@ -279,12 +280,24 @@ data Result a = Result
   , resNonCutsSolution :: !FixSolution
   , gresSolution :: !GFixSolution
   }
-  deriving (Generic, Show, Functor)
+  deriving (Eq, Generic, Show, Functor)
 
 
 
 instance ToJSON a => ToJSON (Result a) where
   toJSON = toJSON . resStatus
+
+instance JSON a => JSON (Result a) where
+  showJSON = showJSON . resStatus
+
+  readJSON js = do
+    resStatus <- readJSON js
+    pure $ Result
+      { resStatus = resStatus,
+        resSolution = mempty,
+        resNonCutsSolution = mempty,
+        gresSolution = mempty
+      }
 
 instance Semigroup (Result a) where
   r1 <> r2  = Result stat soln nonCutsSoln gsoln

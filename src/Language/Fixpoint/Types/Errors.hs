@@ -55,7 +55,7 @@ module Language.Fixpoint.Types.Errors (
 import           System.Exit                        (ExitCode (..))
 import           Control.Exception
 import           Data.Serialize                (Serialize (..))
-import           Data.Aeson                    hiding (Error, Result)
+import           Data.Aeson                    hiding (Error, Result, (.=), (.:))
 import           Data.Generics                 (Data)
 import           Data.Typeable
 import           Control.DeepSeq
@@ -66,6 +66,13 @@ import           Language.Fixpoint.Types.PrettyPrint
 import           Language.Fixpoint.Types.Spans
 import           Language.Fixpoint.Misc
 import qualified Language.Fixpoint.Solver.Stats as Solver
+import           Language.Fixpoint.Utils.JSON ((.=), (.:))
+import qualified Language.Fixpoint.Utils.JSON as LiquidJSON
+import           Text.JSON ( JSON (readJSON, showJSON)
+                           , JSValue (JSArray, JSNull, JSString)
+                           , Result
+                           )
+import qualified Text.JSON as JSON
 import           Text.PrettyPrint.HughesPJ.Compat
 -- import           Text.Printf
 import           Data.Function (on)
@@ -204,6 +211,60 @@ instance Monoid (FixResult a) where
 instance (ToJSON a) => ToJSON (FixResult a) where
   toJSON = genericToJSON defaultOptions
   toEncoding = genericToEncoding defaultOptions
+
+instance JSON a => JSON (FixResult a) where
+  showJSON (Crash xs str) =
+    JSON.makeObj
+      [ "tag" .= ("Crash" :: String),
+        "contents" .= (foldr encodeCrashList [] xs, str)
+      ]
+  showJSON (Unsafe stats xs) =
+    JSON.makeObj
+      [ "tag" .= ("Unsafe" :: String),
+        "contents" .= (stats, xs)
+      ]
+  showJSON (Safe stats) =
+    JSON.makeObj
+      [ "tag" .= ("Safe" :: String),
+        "contents" .= stats
+      ]
+
+  readJSON = LiquidJSON.readJSONObj $ \v -> do
+    tag :: String <- v .: "tag"
+    case tag of
+      "Crash" -> do
+        (JSArray xs, str) <- v .: "contents"
+        crashList <- foldr decodeCrashList (JSON.Ok []) xs
+
+        pure $ Crash crashList str
+      "Unsafe" -> do
+        (stats, xs) <- v .: "contents"
+        pure $ Unsafe stats xs
+      "Safe" -> Safe <$> v .: "contents"
+      other ->
+        JSON.Error $
+          "Expected tag (\"Crash\" | \"Unsafe\" | \"Safe\"), received: "
+            ++ other
+
+-- by default, JSON encodes Maybe as {"Just":x} / {"Nothing":null}, so
+-- we need to manually do this if we want to match aeson
+encodeCrashList :: JSON a => (a, Maybe String) -> [JSValue] -> [JSValue]
+encodeCrashList (x, mstr) acc =
+  JSArray [showJSON x, LiquidJSON.encodeMaybeToNull mstr] : acc
+
+decodeCrashList :: JSON a => JSValue -> Result [(a, Maybe String)] -> Result [(a, Maybe String)]
+decodeCrashList (JSArray [x, mstr]) acc =
+  (\x' str' acc' -> (x', str') : acc')
+    <$> readJSON x
+    <*> str
+    <*> acc
+  where
+    str = case mstr of
+      JSNull -> JSON.Ok Nothing
+      JSString s -> JSON.Ok $ Just $ JSON.fromJSString s
+      other -> JSON.Error $ "Expected null or string, received: " ++ show other
+decodeCrashList other _ =
+  JSON.Error $ "Expected list with two elements, received: " ++ show other
 
 resultDoc :: (Fixpoint a) => FixResult a -> Doc
 resultDoc (Safe stats)     = text "Safe (" <+> text (show $ Solver.checked stats) <+> " constraints checked)"
