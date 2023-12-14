@@ -55,7 +55,9 @@ module Language.Fixpoint.Types.Errors (
 import           System.Exit                        (ExitCode (..))
 import           Control.Exception
 import           Data.Serialize                (Serialize (..))
+#if USE_AESON
 import           Data.Aeson                    hiding (Error, Result)
+#endif
 import           Data.Generics                 (Data)
 import           Data.Typeable
 import           Control.DeepSeq
@@ -201,9 +203,11 @@ instance Monoid (FixResult a) where
 --   fmap f (Unsafe s xs)    = Unsafe s (f <$> xs)
 --   fmap _ (Safe stats)     = Safe stats
 
+#if USE_AESON
 instance (ToJSON a) => ToJSON (FixResult a) where
   toJSON = genericToJSON defaultOptions
   toEncoding = genericToEncoding defaultOptions
+#endif
 
 resultDoc :: (Fixpoint a) => FixResult a -> Doc
 resultDoc (Safe stats)     = text "Safe (" <+> text (show $ Solver.checked stats) <+> " constraints checked)"

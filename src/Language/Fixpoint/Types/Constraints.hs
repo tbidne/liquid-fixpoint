@@ -91,7 +91,9 @@ module Language.Fixpoint.Types.Constraints (
 
 import qualified Data.Store as S
 import           Data.Generics             (Data)
+#if USE_AESON
 import           Data.Aeson                hiding (Result)
+#endif
 import qualified Data.Set                  as Set
 import           Data.Typeable             (Typeable)
 import           Data.Hashable
@@ -281,10 +283,10 @@ data Result a = Result
   }
   deriving (Generic, Show, Functor)
 
-
-
+#if USE_AESON
 instance ToJSON a => ToJSON (Result a) where
   toJSON = toJSON . resStatus
+#endif
 
 instance Semigroup (Result a) where
   r1 <> r2  = Result stat soln nonCutsSoln gsoln

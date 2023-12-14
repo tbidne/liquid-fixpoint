@@ -2,6 +2,7 @@
 --   In particular it exports the functions that solve constraints supplied
 --   either as .fq files or as FInfo.
 {-# LANGUAGE BangPatterns        #-}
+{-# LANGUAGE CPP                 #-}
 {-# LANGUAGE DoAndIfThenElse     #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -29,9 +30,6 @@ module Language.Fixpoint.Solver (
 import           Control.Concurrent                 (setNumCapabilities)
 import qualified Data.HashMap.Strict              as HashMap
 import qualified Data.Store                       as S
-import           Data.Aeson                         (ToJSON, encode)
-import qualified Data.Text.Lazy.IO                as LT
-import qualified Data.Text.Lazy.Encoding          as LT
 import           System.Exit                        (ExitCode (..))
 import           System.Console.CmdArgs.Verbosity   (whenNormal, whenLoud)
 import           Text.PrettyPrint.HughesPJ          (render)
@@ -62,6 +60,12 @@ import           Control.DeepSeq
 import qualified Data.ByteString as B
 import Data.Maybe (catMaybes)
 
+#if USE_AESON
+import           Data.Aeson                         (ToJSON, encode)
+import qualified Data.Text.Lazy.IO                as LT
+import qualified Data.Text.Lazy.Encoding          as LT
+#endif
+
 ---------------------------------------------------------------------------
 -- | Solve an .fq file ----------------------------------------------------
 ---------------------------------------------------------------------------
@@ -76,15 +80,25 @@ solveFQ cfg = do
     file    = srcFile      cfg
 
 ---------------------------------------------------------------------------
+#if USE_AESON
 resultExitCode :: (Fixpoint a, NFData a, ToJSON a) => Config -> Result a
                -> IO ExitCode
+#else
+resultExitCode :: (Fixpoint a, NFData a) => Config -> Result a
+               -> IO ExitCode
+#endif
 ---------------------------------------------------------------------------
 resultExitCode cfg r = do
   whenNormal $ colorStrLn (colorResult stat) (statStr $!! stat)
-  when (json cfg) $ LT.putStrLn jStr
+  when (json cfg) $ do
+#if USE_AESON
+    let jStr = LT.decodeUtf8 . encode $ r
+    LT.putStrLn jStr
+#else
+    putStrLn "Json functionality disabled. Rebuild with aeson flag e.g. cabal build -faeson"
+#endif
   return (eCode r)
   where
-    jStr    = LT.decodeUtf8 . encode $ r
     stat    = resStatus $!! r
     eCode   = resultExit . resStatus
     statStr = render . resultDoc

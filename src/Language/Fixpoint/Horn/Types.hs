@@ -4,6 +4,7 @@
 --   constraints as described in "Local Refinement Typing", ICFP 2017
 -------------------------------------------------------------------------------
 
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE DeriveDataTypeable         #-}
 {-# LANGUAGE DeriveGeneric              #-}
@@ -39,14 +40,17 @@ import           Data.Generics             (Data)
 import           Data.Typeable             (Typeable)
 import           GHC.Generics              (Generic)
 import           Control.DeepSeq ( NFData )
-import qualified Data.Text               as T
 import           Data.Maybe (fromMaybe)
 import qualified Data.List               as L
 import qualified Language.Fixpoint.Misc  as Misc
 import qualified Language.Fixpoint.Types as F
 import qualified Text.PrettyPrint.HughesPJ.Compat as P
 import qualified Data.HashMap.Strict as M
+
+#if USE_AESON
 import           Data.Aeson
+import qualified Data.Text               as T
+#endif
 
 -------------------------------------------------------------------------------
 -- | @HVar@ is a Horn variable
@@ -226,9 +230,11 @@ instance F.PPrint Tag where
   pprintPrec _ _ NoTag   = mempty
   pprintPrec _ _ (Tag s) = P.ptext s
 
+#if USE_AESON
 instance ToJSON Tag where
   toJSON NoTag   = Null
   toJSON (Tag s) = String (T.pack s)
+#endif
 
 instance F.PPrint (Query a) where
   pprintPrec k t q = P.vcat $ L.intersperse " "
